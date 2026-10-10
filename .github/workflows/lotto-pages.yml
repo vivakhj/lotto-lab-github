@@ -1,0 +1,76 @@
+name: Lotto data update & GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+  schedule:
+    # UTC -> Korea: Sat 22:31, Sun 09:41, Mon 09:43.
+    - cron: '31 13 * * 6'
+    - cron: '41 0 * * 0'
+    - cron: '43 0 * * 1'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: lotto-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Get latest official draw records
+        id: update
+        continue-on-error: true
+        run: python scripts/update_lotto.py
+      - name: Report update failure while preserving verified history
+        if: steps.update.outcome == 'failure'
+        run: |
+          echo '::warning::Official data update failed. The verified history is preserved and the app shows the update status.'
+          echo '### Update status' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Official fetch failed. The existing verified dataset remains usable; the app displays its last round and update warning.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Validate data and recommendation behavior
+        run: |
+          python scripts/update_lotto.py --validate-only
+          python -m unittest discover -s tests -p 'test_*.py'
+          node --test tests/core.test.cjs
+      - name: Save the checked dataset
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dist/data/lotto.json dist/data/lotto-data.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update official lotto data and check status'
+            git push
+          fi
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload website
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy website
+        id: deployment
+        uses: actions/deploy-pages@v4

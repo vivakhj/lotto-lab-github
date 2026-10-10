@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#163b36">
+  <meta name="description" content="1회부터 최신 회차까지. 실제 로또 당첨번호 통계를 살펴보고, 나만의 여섯 숫자를 골라보세요.">
+  <title>로또랩 · 통계로 고르는 여섯 숫자</title>
+  <link rel="icon" href="./assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/icon-192.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./data/lotto-data.js"></script>
+  <script defer src="./lotto-core.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#recommend" aria-label="로또랩 홈"><span class="brand-icon" aria-hidden="true">6</span><span>LOTTO<span class="brand-light">LAB</span><small>나의 여섯 숫자</small></span></a>
+    <div class="header-right"><span class="live-dot" aria-hidden="true"></span><span id="headerRange">당첨번호 확인 중</span><button class="icon-button" type="button" id="helpShortcut" aria-label="도움말 열기">?</button></div>
+  </header>
+  <main>
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-copy"><p class="eyebrow">LOTTO 6/45 · DATA & CHOICE</p><h1 id="heroTitle">이번 주,<br>나의 <span>여섯 숫자.</span></h1><p class="hero-description">오랜 기록에서 선택의 힌트를 찾고,<br>마지막은 가볍게 운에 맡겨보세요.</p><p class="probability-note">모든 조합의 1등 확률은 동일합니다. <strong>1 / 8,145,060</strong></p></div>
+      <div class="latest-panel"><div class="latest-head"><span class="eyebrow">LAST DRAW</span><a href="https://www.dhlottery.co.kr/lt645/result" target="_blank" rel="noopener noreferrer">공식 결과 ↗</a></div><div class="latest-title"><h2 id="latestRound">최근 당첨번호</h2><span id="latestDate"></span></div><div id="latestBalls" class="ball-row latest-balls" aria-label="최신 당첨번호"></div><div class="latest-foot"><span id="sourceStatus">데이터 검증 중</span><button type="button" id="refreshButton" class="text-button">새로 확인 ↻</button></div></div>
+    </section>
+    <div id="dataAlert" class="data-alert" role="status" hidden></div>
+    <nav class="tabs" role="tablist" aria-label="로또랩 메뉴">
+      <button id="tab-recommend" role="tab" aria-controls="panel-recommend" aria-selected="true" tabindex="0" data-tab="recommend">번호 추천</button>
+      <button id="tab-statistics" role="tab" aria-controls="panel-statistics" aria-selected="false" tabindex="-1" data-tab="statistics">통계 살펴보기</button>
+      <button id="tab-saved" role="tab" aria-controls="panel-saved" aria-selected="false" tabindex="-1" data-tab="saved">내 번호 <span id="savedCount" class="tab-count">0</span></button>
+      <button id="tab-help" role="tab" aria-controls="panel-help" aria-selected="false" tabindex="-1" data-tab="help">이용 안내</button>
+    </nav>
+
+    <section id="panel-recommend" role="tabpanel" aria-labelledby="tab-recommend" class="recommend-layout">
+      <form id="recommendForm" class="settings-panel">
+        <div class="section-heading"><span class="section-number">01</span><h2>어떻게 고를까요?</h2></div>
+        <fieldset class="mode-options"><legend class="sr-only">추천 방식</legend>
+          <label class="mode-card"><input type="radio" name="mode" value="blended" checked><span><strong>통계 혼합 <em>기본</em></strong><small>전체 기록 70% + 최근 기록 30%</small></span><span class="radio-mark"></span></label>
+          <label class="mode-card"><input type="radio" name="mode" value="all"><span><strong>전체 기록 중심</strong><small>1회부터 현재까지의 출현 빈도</small></span><span class="radio-mark"></span></label>
+          <label class="mode-card"><input type="radio" name="mode" value="recent"><span><strong>최근 기록 중심</strong><small>선택한 최근 구간의 출현 빈도</small></span><span class="radio-mark"></span></label>
+          <label class="mode-card"><input type="radio" name="mode" value="uniform"><span><strong>균등 무작위</strong><small>통계 가중치 없이 숫자 고르기</small></span><span class="radio-mark"></span></label>
+        </fieldset>
+        <div class="select-row"><label for="windowSize">최근 분석 구간<select id="windowSize"><option value="10">최근 10회</option><option value="26">최근 26회</option><option value="52" selected>최근 52회</option><option value="104">최근 104회</option></select></label><label for="gameCount">추천 개수<select id="gameCount"><option value="1">1게임</option><option value="3">3게임</option><option value="5" selected>5게임</option><option value="10">10게임</option></select></label></div>
+        <details class="advanced"><summary>나만의 번호 · 형태 조건 <span>선택</span></summary>
+          <div class="number-tools"><div role="group" aria-label="번호 선택 동작"><button type="button" id="pickInclude" class="small-button selected" aria-pressed="true">고정하기</button><button type="button" id="pickExclude" class="small-button" aria-pressed="false">제외하기</button></div><button type="button" id="resetNumbers" class="text-button">초기화</button></div>
+          <div id="numberGrid" class="number-grid" aria-label="고정 또는 제외할 번호 선택"></div><p id="selectionSummary" class="small-text" aria-live="polite">고정 없음 · 제외 없음</p><p class="small-text">번호를 다시 누르면 선택이 해제됩니다.</p>
+          <label class="check-row"><input id="balanced" type="checkbox" checked><span><strong>홀짝 · 고저 · 합계 균형</strong><small>홀수·1~22 각 2~4개, 역대 합계 10~90백분위</small></span></label>
+          <label class="check-row"><input id="avoidRun" type="checkbox" checked><span><strong>3개 이상 연속번호 제외</strong><small>예: 1·2·3이 함께 들어가는 조합</small></span></label>
+          <label class="check-row"><input id="avoidHistory" type="checkbox"><span><strong>과거 1등과 같은 조합 제외</strong><small>개인 취향 옵션이며 재출현은 가능합니다.</small></span></label>
+          <p class="filter-note">형태 조건은 선택 취향입니다. 필터를 켜도 당첨 확률이 높아지지 않습니다.</p>
+        </details>
+        <button type="submit" id="generateButton" class="primary-button">나의 번호 추천받기 <span aria-hidden="true">↗</span></button>
+        <p class="settings-foot">보너스 번호를 제외한 실제 당첨번호 6개로 분석합니다.</p>
+      </form>
+      <div class="results-panel"><div class="results-header"><div><p class="eyebrow">YOUR PICKS</p><h2 id="resultTitle">여섯 숫자를 만나보세요.</h2></div><button type="button" id="copyAll" class="secondary-button" hidden>전체 복사</button></div><p id="resultDescription" class="muted">설정을 고르고 추천 버튼을 누르면 번호와 추천 근거가 표시됩니다.</p><div id="generationError" class="error-message" role="alert" hidden></div><div id="games" aria-live="polite"><div class="empty-picks"><div class="placeholder-balls" aria-hidden="true"><span>?</span><span>?</span><span>?</span><span>?</span><span>?</span><span>?</span></div><h3>통계는 선택의 힌트,<br>결과는 새로운 추첨.</h3><p>오늘 마음에 드는 조합을 골라보세요.</p></div></div><div class="result-note"><span aria-hidden="true">ⓘ</span><p>많이 나온 번호도, 오래 나오지 않은 번호도 다음 추첨에서의 확률은 같습니다. 이 도구는 번호 선택을 도와줍니다.</p></div></div>
+    </section>
+
+    <section id="panel-statistics" role="tabpanel" aria-labelledby="tab-statistics" hidden>
+      <div class="panel-title"><div><p class="eyebrow">THE RECORDS</p><h2>기록으로 살펴보는 45개의 숫자.</h2><p id="statisticsRange" class="muted"></p></div><button type="button" id="exportData" class="secondary-button">당첨기록 CSV</button></div>
+      <div id="statHighlights" class="stat-highlights"></div>
+      <div class="statistics-grid"><article class="content-card"><div class="card-heading"><h3>번호별 출현 빈도</h3><label class="compact-select" for="heatMetric">기준<select id="heatMetric"><option value="count">전체 기록</option><option value="recent">최근 기록</option><option value="gap">미출현 회차</option></select></label></div><p id="heatExplanation" class="small-text"></p><div id="heatGrid" class="heat-grid"></div><div class="heat-legend"><span>적음</span><div></div><span>많음</span></div><p class="small-text">숫자를 누르면 해당 번호의 상세 기록을 볼 수 있습니다.</p></article><article class="content-card"><div class="card-heading"><h3 id="rankingTitle">자주 나온 번호 TOP 10</h3></div><div id="rankingBars" class="ranking-bars"></div><p class="small-text">출현 횟수는 미래의 당첨 확률이 아닙니다.</p></article></div>
+      <div class="statistics-grid"><article class="content-card"><h3>당첨 조합의 형태</h3><div id="shapeStats" class="shape-stats"></div><p class="small-text">여러 조합을 묶은 형태의 빈도입니다. 개별 조합의 확률은 모두 같습니다.</p></article><article class="content-card"><h3>함께 자주 나온 번호</h3><div id="pairStats" class="pair-list"></div><p class="small-text">과거 같은 회차에 함께 출현한 두 번호의 횟수입니다. 추천 가중치에는 사용하지 않습니다.</p></article></div>
+      <article class="content-card full-table"><div class="card-heading"><h3>전체 번호 통계</h3><label class="compact-select" for="tableSort">정렬<select id="tableSort"><option value="number">번호순</option><option value="count">전체 출현순</option><option value="recent">최근 출현순</option><option value="gap">미출현 회차순</option></select></label></div><div class="table-scroll"><table><caption class="sr-only">1~45 번호별 전체·최근 출현 기록</caption><thead><tr><th scope="col">번호</th><th scope="col">전체 출현</th><th scope="col">회차당 출현율</th><th scope="col" id="recentTableHeading">최근 52회</th><th scope="col">미출현 회차</th><th scope="col">마지막 출현</th></tr></thead><tbody id="statisticsTable"></tbody></table></div></article>
+    </section>
+
+    <section id="panel-saved" role="tabpanel" aria-labelledby="tab-saved" hidden>
+      <div class="panel-title"><div><p class="eyebrow">MY NUMBERS</p><h2>마음에 드는 번호를 모아두세요.</h2><p class="muted">이 브라우저에 저장됩니다. 저장한 번호의 대상 회차 결과도 확인할 수 있습니다.</p></div><button type="button" id="copySaved" class="secondary-button">저장 번호 복사</button></div>
+      <div id="savedGames" class="saved-games"></div>
+      <article class="content-card checker"><h3>내 번호 당첨 확인</h3><p class="small-text">실제 구매번호를 입력하고 비교할 회차를 선택하세요.</p><form id="checkForm"><label for="checkRound">비교 회차<input id="checkRound" type="number" min="1" required></label><label for="checkNumbers">번호 6개<input id="checkNumbers" type="text" inputmode="text" placeholder="예: 3, 11, 18, 27, 34, 42" required></label><button class="primary-button" type="submit">결과 확인</button></form><div id="checkResult" role="status"></div></article>
+    </section>
+
+    <section id="panel-help" role="tabpanel" aria-labelledby="tab-help" hidden>
+      <div class="panel-title"><div><p class="eyebrow">HOW IT WORKS</p><h2>통계를 이해하고, 가볍게 선택하세요.</h2></div></div>
+      <div class="help-layout"><article class="content-card"><h3>처음이라면 이렇게 사용하세요.</h3><ol class="help-steps"><li><strong>기본 설정으로 시작</strong><p>‘통계 혼합’과 5게임을 선택하고 추천 버튼을 누르세요.</p></li><li><strong>번호와 근거 확인</strong><p>번호를 눌러 기록을 보거나 ‘추천 근거’를 펼쳐 전체·최근 출현 횟수를 확인하세요.</p></li><li><strong>마음에 들면 저장</strong><p>‘저장’으로 내 번호에 남기고 ‘복사’로 가져가세요. 같은 화면에서 다시 추천받을 수 있습니다.</p></li></ol><h3>홈 화면에 추가하기</h3><p>iPhone/iPad는 Safari의 공유 메뉴 → ‘홈 화면에 추가’, Android는 Chrome 메뉴 → ‘홈 화면에 추가’를 이용하세요. HTTPS로 배포된 주소에서 사용할 수 있습니다.</p></article>
+      <article class="content-card"><h3>추천 방식은 투명하게.</h3><p>각 번호의 출현 횟수에 1을 더해 보정한 뒤, 전체 또는 최근 구간의 총 출현 횟수에 45를 더한 값으로 나눕니다. 혼합 모드는 두 값을 70:30으로 합칩니다. 그 값의 제곱근을 번호 선택 가중치로 사용해, 빈도 차이를 완만하게 반영합니다.</p><p>가중치에 따라 중복 없이 6개를 뽑고, 켜둔 형태 조건을 만족하는 조합만 보여줍니다. 여러 게임 안에서도 같은 조합은 중복되지 않습니다.</p><p>기본 형태 조건은 홀수 2~4개, 1~22 번호 2~4개, 역대 합계의 10~90백분위 범위, 3개 이상 연속번호 제외입니다. 모두 직접 끌 수 있습니다.</p><p class="filter-note">‘균등 무작위’에서는 번호 가중치가 같습니다. 켜둔 형태 조건은 계속 적용됩니다. 제한 없는 무작위를 원하면 조건을 모두 끄세요.</p></article>
+      <article class="content-card"><h3>1 · 2 · 3 · 4 · 5 · 6도 확률은 같나요?</h3><p>네. 45개에서 서로 다른 6개를 고르는 조합은 총 8,145,060개입니다. 공정하고 독립적인 추첨에서 어느 한 조합의 1등 확률도 1/8,145,060입니다.</p><p>홀짝 3:3처럼 흔한 형태에는 더 많은 개별 조합이 속합니다. 형태가 흔하다는 것과 그 안의 특정 조합이 더 잘 당첨된다는 것은 다른 이야기입니다.</p><p>오래 안 나온 번호가 ‘나올 때가 됐다’는 보장은 없습니다. 미출현 회차는 정보로만 표시하며 가중치에는 넣지 않습니다.</p></article>
+      <article class="content-card"><h3>데이터와 저장</h3><p id="dataAbout">동행복권 공개 당첨번호를 사용합니다.</p><p>추천과 출현 통계에서는 보너스 번호를 제외합니다. 당첨 확인에서는 2등 판정에 사용합니다.</p><p>GitHub 버전에는 매주 토요일·일요일·월요일에 확인하는 자동 갱신 작업이 포함됩니다. 공식 사이트 접근 제한이나 구조 변경으로 실패하면 기존 검증 데이터를 유지하고 화면에 알립니다. 예정된 추첨 이후 데이터가 늦어져도 표시합니다.</p><p>저장 번호는 계정 없이 이 브라우저에만 남습니다. 브라우저 데이터 삭제, 시크릿 모드 종료, 다른 기기·주소 사용 시 이어지지 않습니다.</p><a class="inline-link" href="https://www.dhlottery.co.kr/lt645/result" target="_blank" rel="noopener noreferrer">동행복권 공식 당첨번호 ↗</a></article></div>
+    </section>
+    <footer><span class="footer-brand">LOTTO LAB</span><p>통계는 기록, 추천은 선택. 당첨을 예측하거나 보장하지 않습니다.</p><span>MADE FOR YOUR SIX</span></footer>
+  </main>
+  <dialog id="numberDialog"><div class="dialog-head"><h2 id="dialogTitle">번호 기록</h2><button type="button" id="closeDialog" class="icon-button" aria-label="닫기">×</button></div><div id="numberDetail"></div></dialog>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <noscript><p class="error-message">이 웹앱은 JavaScript를 켜야 사용할 수 있습니다.</p></noscript>
+</body>
+</html>
